@@ -86,7 +86,7 @@
             ["==", ["feature-state", "clusterColor"], "green"],
             "rgba(0,255,0,0.9)",
             ["==", ["feature-state", "clusterColor"], "blue-green"],
-            "linear-gradient(to right, rgba(0,255,0,0.9) 50%, rgba(0,133,163,0.9) 50%)",
+            "rgba(0,133,163,0.9)", // default to blue
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
