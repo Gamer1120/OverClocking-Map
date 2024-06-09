@@ -85,8 +85,8 @@
             "case",
             ["==", ["feature-state", "clusterColor"], "green"],
             "rgba(0,255,0,0.9)",
-            ["==", ["feature-state", "clusterColor"], "blue-green"],
-            "rgba(0,133,163,0.9)", // default to blue
+            ["==", ["feature-state", "clusterColor"], "cyan"],
+            "rgba(0,255,255,0.9)",
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
@@ -220,17 +220,16 @@
         );
       }
 
-      map.on("data", (e) => {
-        if (e.sourceId === "poi-full" && e.isSourceLoaded) {
-          const mapSource = map.getSource("poi-full");
+      function updateClusterColors() {
+        const clusters = map.querySourceFeatures("poi-full", {
+          filter: ["has", "point_count"],
+        });
 
-          const clusters = map.querySourceFeatures("poi-full", {
-            filter: ["has", "point_count"],
-          });
-
-          clusters.forEach((cluster) => {
-            const clusterId = cluster.properties.cluster_id;
-            mapSource.getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
+        clusters.forEach((cluster) => {
+          const clusterId = cluster.properties.cluster_id;
+          map
+            .getSource("poi-full")
+            .getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
               if (err) return;
               let greenCount = 0;
               leaves.forEach((leaf) => {
@@ -243,7 +242,7 @@
                 greenCount === leaves.length
                   ? "green"
                   : greenCount > 0
-                  ? "blue-green"
+                  ? "cyan"
                   : "blue";
 
               map.setFeatureState(
@@ -251,9 +250,11 @@
                 { clusterColor: clusterColor }
               );
             });
-          });
-        }
-      });
+        });
+      }
+
+      map.on("render", updateClusterColors);
+      map.on("moveend", updateClusterColors);
     });
   }
 
