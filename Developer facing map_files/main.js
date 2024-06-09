@@ -15,7 +15,7 @@
     url: "https://openbanners.org:5001/export_activated_pois",
   };
 
-  function parseCSV(data, options = {}) {
+  function parseCSV(data) {
     const lines = data.split("\n");
     const records = [];
     let headers = lines[0].split(",");
@@ -66,10 +66,50 @@
           .addTo(map);
       }
 
-      const pointLayer = {
+      map.addSource("poi-full", {
+        type: "geojson",
+        data: features,
+        generateId: true,
+        cluster: true,
+        clusterMaxZoom: 12,
+        clusterRadius: 22,
+      });
+
+      map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "poi-full",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": [
+            "case",
+            ["==", ["get", "clusterColor"], "green"],
+            "rgba(0,255,0,0.9)",
+            ["==", ["get", "clusterColor"], "blue"],
+            "rgba(0,133,163,0.9)",
+            "rgba(0,133,163,0.9)", // default color
+          ],
+          "circle-radius": 14,
+        },
+      });
+
+      map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "poi-full",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": "{point_count_abbreviated}",
+          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-size": 12,
+        },
+      });
+
+      map.addLayer({
         id: "poi-point",
         type: "circle",
         source: "poi-full",
+        filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-radius": [
             "interpolate",
@@ -84,12 +124,7 @@
             14,
             8,
           ],
-          "circle-color": [
-            "case",
-            ["boolean", ["feature-state", "hover"], false],
-            "rgba(0,133,163,0.9)",
-            ["get", "color"],
-          ],
+          "circle-color": ["get", "color"],
           "circle-opacity": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
@@ -97,68 +132,27 @@
             1,
           ],
         },
-      };
+      });
 
-      if (queryParams.get("nocluster") === "1") {
-        map.addSource("poi-full", {
-          type: "geojson",
-          data: features,
-          generateId: true,
+      map.on("click", "clusters", (e) => {
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: ["clusters"],
         });
-        map.addLayer(pointLayer, "waterway-label");
-      } else {
-        map.addSource("poi-full", {
-          type: "geojson",
-          data: features,
-          generateId: true,
-          cluster: true,
-          clusterMaxZoom: 12,
-          clusterRadius: 22,
-        });
-        map.addLayer({
-          id: "clusters",
-          type: "circle",
-          source: "poi-full",
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-color": "rgba(0,133,163,0.9)",
-            "circle-radius": 14,
-          },
-        });
-        map.addLayer({
-          id: "cluster-count",
-          type: "symbol",
-          source: "poi-full",
-          filter: ["has", "point_count"],
-          layout: {
-            "text-field": "{point_count_abbreviated}",
-            "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-            "text-size": 12,
-          },
-        });
-        pointLayer.filter = ["!", ["has", "point_count"]];
-        map.addLayer(pointLayer, "waterway-label");
-
-        map.on("click", "clusters", (e) => {
-          const features = map.queryRenderedFeatures(e.point, {
-            layers: ["clusters"],
+        const clusterId = features[0].properties.cluster_id;
+        map
+          .getSource("poi-full")
+          .getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) return;
+            map.easeTo({ center: features[0].geometry.coordinates, zoom });
           });
-          const clusterId = features[0].properties.cluster_id;
-          map
-            .getSource("poi-full")
-            .getClusterExpansionZoom(clusterId, (err, zoom) => {
-              if (err) return;
-              map.easeTo({ center: features[0].geometry.coordinates, zoom });
-            });
-        });
+      });
 
-        map.on("mouseenter", "clusters", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "clusters", () => {
-          map.getCanvas().style.cursor = "";
-        });
-      }
+      map.on("mouseenter", "clusters", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "clusters", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       let hoveredFeatureId = null;
       map.on("mouseover", "poi-point", (e) => {
@@ -220,6 +214,56 @@
           })
         );
       }
+
+      map.on("data", (e) => {
+        if (e.sourceId === "poi-full" && e.isSourceLoaded) {
+          map.getSource("poi-full").getClusterLeaves = (
+            clusterId,
+            limit,
+            offset,
+            callback
+          ) => {
+            mapboxgl.accessToken = config.token;
+            const mapSource = map.getSource("poi-full");
+            const supercluster = mapSource._data.supercluster;
+            const leaves = supercluster.getLeaves(clusterId, limit, offset);
+            callback(null, leaves);
+          };
+
+          map.on("render", function () {
+            const clusterFeatures = map.querySourceFeatures("poi-full", {
+              sourceLayer: "clusters",
+            });
+
+            clusterFeatures.forEach((feature) => {
+              const clusterId = feature.properties.cluster_id;
+              map
+                .getSource("poi-full")
+                .getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
+                  if (err) return;
+                  let greenCount = 0;
+                  leaves.forEach((leaf) => {
+                    if (leaf.properties.color === "rgba(0,255,0,0.9)") {
+                      greenCount++;
+                    }
+                  });
+
+                  const clusterColor =
+                    greenCount === leaves.length
+                      ? "green"
+                      : greenCount > 0
+                      ? "blue-green"
+                      : "blue";
+
+                  map.setFeatureState(
+                    { source: "poi-full", id: clusterId },
+                    { clusterColor: clusterColor }
+                  );
+                });
+            });
+          });
+        }
+      });
     });
   }
 
