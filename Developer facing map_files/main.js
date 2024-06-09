@@ -7,8 +7,8 @@
     style: "dark-v10",
     csvUrl: "https://oc-map.ingress.wiki/POIdb.csv",
     cacheBuster: true,
-    zoom: 4,
-    defaultCenter: [-98, 39],
+    zoom: 7, // Adjust the zoom level for a suitable view of the Netherlands
+    defaultCenter: [5.2913, 52.1326], // Coordinates for the center of the Netherlands
   };
 
   const obConfig = {
