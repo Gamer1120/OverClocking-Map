@@ -15,25 +15,11 @@
     url: "https://openbanners.org:5001/export_activated_pois",
   };
 
-  const base64 = {
-    encode(input) {
-      const characters =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-      let output = "";
-      let i = 0;
-      while (i < input.length) {
-        const chunk = (input[i++] << 16) | (input[i++] << 8) | input[i++];
-        output += characters[(chunk >> 18) & 63];
-        output += characters[(chunk >> 12) & 63];
-        output += characters[(chunk >> 6) & 63];
-        output += characters[chunk & 63];
-      }
-      return output;
-    },
-  };
-
   function parseCSV(data, options = {}) {
-    if (typeof data === "string") data = new Uint8Array(Buffer.from(data));
+    if (typeof data === "string") {
+      const decoder = new TextDecoder("utf-8");
+      data = new Uint8Array([...data].map((c) => c.charCodeAt(0)));
+    }
     const records = [];
     let record = [];
     let field = "";
