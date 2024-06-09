@@ -224,31 +224,33 @@
         if (e.sourceId === "poi-full" && e.isSourceLoaded) {
           const mapSource = map.getSource("poi-full");
 
-          mapSource._data.features.forEach((feature) => {
-            if (feature.properties.cluster) {
-              const clusterId = feature.properties.cluster_id;
-              mapSource.getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
-                if (err) return;
-                let greenCount = 0;
-                leaves.forEach((leaf) => {
-                  if (leaf.properties.color === "rgba(0,255,0,0.9)") {
-                    greenCount++;
-                  }
-                });
+          const clusters = map.querySourceFeatures("poi-full", {
+            filter: ["has", "point_count"],
+          });
 
-                const clusterColor =
-                  greenCount === leaves.length
-                    ? "green"
-                    : greenCount > 0
-                    ? "blue-green"
-                    : "blue";
-
-                map.setFeatureState(
-                  { source: "poi-full", id: clusterId },
-                  { clusterColor: clusterColor }
-                );
+          clusters.forEach((cluster) => {
+            const clusterId = cluster.properties.cluster_id;
+            mapSource.getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
+              if (err) return;
+              let greenCount = 0;
+              leaves.forEach((leaf) => {
+                if (leaf.properties.color === "rgba(0,255,0,0.9)") {
+                  greenCount++;
+                }
               });
-            }
+
+              const clusterColor =
+                greenCount === leaves.length
+                  ? "green"
+                  : greenCount > 0
+                  ? "blue-green"
+                  : "blue";
+
+              map.setFeatureState(
+                { source: "poi-full", id: clusterId },
+                { clusterColor: clusterColor }
+              );
+            });
           });
         }
       });
