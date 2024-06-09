@@ -227,50 +227,33 @@
 
       map.on("data", (e) => {
         if (e.sourceId === "poi-full" && e.isSourceLoaded) {
-          map.getSource("poi-full").getClusterLeaves = (
-            clusterId,
-            limit,
-            offset,
-            callback
-          ) => {
-            mapboxgl.accessToken = config.token;
-            const mapSource = map.getSource("poi-full");
-            const supercluster = mapSource._data.supercluster;
-            const leaves = supercluster.getLeaves(clusterId, limit, offset);
-            callback(null, leaves);
-          };
+          const mapSource = map.getSource("poi-full");
 
-          map.on("render", function () {
-            const clusterFeatures = map.querySourceFeatures("poi-full", {
-              sourceLayer: "clusters",
-            });
-
-            clusterFeatures.forEach((feature) => {
+          mapSource._data.features.forEach((feature) => {
+            if (feature.properties.cluster) {
               const clusterId = feature.properties.cluster_id;
-              map
-                .getSource("poi-full")
-                .getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
-                  if (err) return;
-                  let greenCount = 0;
-                  leaves.forEach((leaf) => {
-                    if (leaf.properties.color === "rgba(0,255,0,0.9)") {
-                      greenCount++;
-                    }
-                  });
-
-                  const clusterColor =
-                    greenCount === leaves.length
-                      ? "green"
-                      : greenCount > 0
-                      ? "blue-green"
-                      : "blue";
-
-                  map.setFeatureState(
-                    { source: "poi-full", id: clusterId },
-                    { clusterColor: clusterColor }
-                  );
+              mapSource.getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
+                if (err) return;
+                let greenCount = 0;
+                leaves.forEach((leaf) => {
+                  if (leaf.properties.color === "rgba(0,255,0,0.9)") {
+                    greenCount++;
+                  }
                 });
-            });
+
+                const clusterColor =
+                  greenCount === leaves.length
+                    ? "green"
+                    : greenCount > 0
+                    ? "blue-green"
+                    : "blue";
+
+                map.setFeatureState(
+                  { source: "poi-full", id: clusterId },
+                  { clusterColor: clusterColor }
+                );
+              });
+            }
           });
         }
       });
