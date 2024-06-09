@@ -16,32 +16,17 @@
   };
 
   function parseCSV(data, options = {}) {
-    if (typeof data === "string") {
-      const decoder = new TextDecoder("utf-8");
-      data = new Uint8Array([...data].map((c) => c.charCodeAt(0)));
-    }
+    const lines = data.split("\n");
     const records = [];
-    let record = [];
-    let field = "";
-    let insideQuotes = false;
-
-    for (let i = 0; i < data.length; i++) {
-      const char = data[i];
-      if (char === 34) {
-        // Double quote (")
-        insideQuotes = !insideQuotes;
-      } else if (char === 44 && !insideQuotes) {
-        // Comma (,)
-        record.push(field);
-        field = "";
-      } else if (char === 10 && !insideQuotes) {
-        // Newline (\n)
-        record.push(field);
+    let headers = lines[0].split(",");
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(",");
+      if (row.length === headers.length) {
+        const record = {};
+        for (let j = 0; j < headers.length; j++) {
+          record[headers[j].trim()] = row[j].trim();
+        }
         records.push(record);
-        field = "";
-        record = [];
-      } else {
-        field += String.fromCharCode(char);
       }
     }
     return records;
@@ -275,10 +260,8 @@
   }`;
 
   loadMapData(obConfig.url, (obCsvData) => {
-    const obRecords = parseCSV(obCsvData, {
-      columns: true,
-      skipEmptyLines: true,
-    });
+    const obRecords = parseCSV(obCsvData);
+    console.log("Activated POIs:", obRecords);
     const obCoords = new Set(
       obRecords.map(
         (row) =>
@@ -287,11 +270,10 @@
     );
 
     loadMapData(csvUrl, (csvData) => {
-      const records = parseCSV(csvData, {
-        columns: true,
-        skipEmptyLines: true,
-      });
+      const records = parseCSV(csvData);
+      console.log("All POIs:", records);
       const geoJsonData = convertToGeoJson(records, obCoords);
+      console.log("GeoJSON Data:", geoJsonData);
       initializeMap(geoJsonData, config);
     });
   });
