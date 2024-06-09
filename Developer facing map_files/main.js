@@ -43,6 +43,19 @@
     xhr.send();
   }
 
+  function throttle(func, limit) {
+    let inThrottle;
+    return function () {
+      const args = arguments;
+      const context = this;
+      if (!inThrottle) {
+        func.apply(context, args);
+        inThrottle = true;
+        setTimeout(() => (inThrottle = false), limit);
+      }
+    };
+  }
+
   function initializeMap(features, config) {
     mapboxgl.accessToken = config.token;
 
@@ -253,8 +266,10 @@
         });
       }
 
-      map.on("render", updateClusterColors);
-      map.on("moveend", updateClusterColors);
+      const throttledUpdate = throttle(updateClusterColors, 200);
+
+      map.on("render", throttledUpdate);
+      map.on("moveend", throttledUpdate);
     });
   }
 
