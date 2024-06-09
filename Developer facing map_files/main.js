@@ -98,8 +98,8 @@
             "case",
             ["==", ["feature-state", "clusterColor"], "green"],
             "rgba(0,255,0,0.9)",
-            ["==", ["feature-state", "clusterColor"], "cyan"],
-            "rgba(0,255,255,0.9)",
+            ["==", ["feature-state", "clusterColor"], "yellow"],
+            "rgba(255,255,0,0.9)",
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
@@ -255,7 +255,7 @@
                 greenCount === leaves.length
                   ? "green"
                   : greenCount > 0
-                  ? "cyan"
+                  ? "yellow"
                   : "blue";
 
               map.setFeatureState(
