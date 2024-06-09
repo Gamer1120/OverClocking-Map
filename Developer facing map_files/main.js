@@ -87,6 +87,16 @@
             "rgba(0,255,0,0.9)",
             ["==", ["get", "clusterColor"], "blue"],
             "rgba(0,133,163,0.9)",
+            ["==", ["get", "clusterColor"], "blue-green"],
+            [
+              "interpolate",
+              ["linear"],
+              ["get", "point_count"],
+              1,
+              "rgba(0,133,163,0.9)",
+              100,
+              "rgba(0,255,0,0.9)",
+            ],
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
