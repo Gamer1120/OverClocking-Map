@@ -119,7 +119,12 @@
           "text-size": 12,
         },
         paint: {
-          "text-color": "#fff",
+          "text-color": [
+            "case",
+            ["==", ["feature-state", "clusterColor"], "yellow"],
+            "#000000",
+            "#ffffff",
+          ],
         },
       });
 
