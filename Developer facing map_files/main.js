@@ -83,20 +83,10 @@
         paint: {
           "circle-color": [
             "case",
-            ["==", ["get", "clusterColor"], "green"],
+            ["boolean", ["feature-state", "green"], false],
             "rgba(0,255,0,0.9)",
-            ["==", ["get", "clusterColor"], "blue"],
-            "rgba(0,133,163,0.9)",
-            ["==", ["get", "clusterColor"], "blue-green"],
-            [
-              "interpolate",
-              ["linear"],
-              ["get", "point_count"],
-              1,
-              "rgba(0,133,163,0.9)",
-              100,
-              "rgba(0,255,0,0.9)",
-            ],
+            ["boolean", ["feature-state", "blue-green"], false],
+            ["step", ["get", "point_count"], "rgba(0,133,163,0.9)"],
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
@@ -229,6 +219,12 @@
         if (e.sourceId === "poi-full" && e.isSourceLoaded) {
           const mapSource = map.getSource("poi-full");
 
+          mapSource.getClusterLeaves = (clusterId, limit, offset, callback) => {
+            const supercluster = mapSource._data.supercluster;
+            const leaves = supercluster.getLeaves(clusterId, limit, offset);
+            callback(null, leaves);
+          };
+
           mapSource._data.features.forEach((feature) => {
             if (feature.properties.cluster) {
               const clusterId = feature.properties.cluster_id;
@@ -250,7 +246,7 @@
 
                 map.setFeatureState(
                   { source: "poi-full", id: clusterId },
-                  { clusterColor: clusterColor }
+                  { [clusterColor]: true }
                 );
               });
             }
