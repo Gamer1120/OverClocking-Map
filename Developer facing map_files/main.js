@@ -11,6 +11,10 @@
     defaultCenter: [-98, 39],
   };
 
+  const obConfig = {
+    url: "https://openbanners.org:5001/export_activated_pois",
+  };
+
   const base64 = {
     encode(input) {
       const characters =
@@ -109,7 +113,12 @@
             14,
             8,
           ],
-          "circle-color": "rgba(0,133,163,0.9)",
+          "circle-color": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            "rgba(0,133,163,0.9)",
+            ["get", "color"],
+          ],
           "circle-opacity": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
@@ -243,25 +252,34 @@
     });
   }
 
-  function convertToGeoJson(records) {
+  function convertToGeoJson(records, compareCoords = new Set()) {
     return {
       type: "FeatureCollection",
-      features: records.map((row) => ({
-        type: "Feature",
-        properties: {
-          img: row.img_uri,
-          title: row.title,
-          address: row.address,
-          localizability: row.localizability,
-        },
-        geometry: {
-          type: "Point",
-          coordinates: [
-            parseFloat(row.lng).toFixed(6),
-            parseFloat(row.lat).toFixed(6),
-          ],
-        },
-      })),
+      features: records.map((row) => {
+        const coordKey = `${parseFloat(row.lng).toFixed(5)},${parseFloat(
+          row.lat
+        ).toFixed(5)}`;
+        const color = compareCoords.has(coordKey)
+          ? "rgba(0,255,0,0.9)"
+          : "rgba(0,133,163,0.9)";
+        return {
+          type: "Feature",
+          properties: {
+            img: row.img_uri,
+            title: row.title,
+            address: row.address,
+            localizability: row.localizability,
+            color: color,
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [
+              parseFloat(row.lng).toFixed(6),
+              parseFloat(row.lat).toFixed(6),
+            ],
+          },
+        };
+      }),
     };
   }
 
@@ -270,12 +288,25 @@
     config.cacheBuster ? queryParams.get("cb") || Math.random() : 0
   }`;
 
-  loadMapData(csvUrl, (csvData) => {
-    const records = parseCSV(csvData, {
+  loadMapData(obConfig.url, (obCsvData) => {
+    const obRecords = parseCSV(obCsvData, {
       columns: true,
       skipEmptyLines: true,
     });
-    const geoJsonData = convertToGeoJson(records);
-    initializeMap(geoJsonData, config);
+    const obCoords = new Set(
+      obRecords.map(
+        (row) =>
+          `${parseFloat(row.lng).toFixed(5)},${parseFloat(row.lat).toFixed(5)}`
+      )
+    );
+
+    loadMapData(csvUrl, (csvData) => {
+      const records = parseCSV(csvData, {
+        columns: true,
+        skipEmptyLines: true,
+      });
+      const geoJsonData = convertToGeoJson(records, obCoords);
+      initializeMap(geoJsonData, config);
+    });
   });
 })();
