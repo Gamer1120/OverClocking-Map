@@ -13,6 +13,7 @@
 
   const obConfig = {
     url: "https://openbanners.org:5001/export_activated_pois",
+    queued_url: "https://openbanners.org:5001/export_queued_pois",
   };
 
   function parseCSV(data) {
@@ -278,7 +279,7 @@
     });
   }
 
-  function convertToGeoJson(records, compareCoords = new Set()) {
+  function convertToGeoJson(records, compareCoords = new Set(), compareQueuedCoords = new Set()) {
     return {
       type: "FeatureCollection",
       features: records.map((row) => {
@@ -287,7 +288,7 @@
         ).toFixed(5)}`;
         const color = compareCoords.has(coordKey)
           ? "rgba(0,255,0,0.9)"
-          : "rgba(0,133,163,0.9)";
+          : compareQueuedCoords.has(coordKey) ? "rgba(255, 0, 0, 0.9)" : "rgba(0,133,163,0.9)";
         return {
           type: "Feature",
           properties: {
@@ -324,12 +325,25 @@
       )
     );
 
-    loadMapData(csvUrl, (csvData) => {
-      const records = parseCSV(csvData);
-      console.log("All POIs:", records);
-      const geoJsonData = convertToGeoJson(records, obCoords);
-      console.log("GeoJSON Data:", geoJsonData);
-      initializeMap(geoJsonData, config);
-    });
+    loadMapData(obConfig.queued_url, (obQueuedData)=>{
+      const obQueuedRecords = parseCSV(obQueuedData);
+      console.log("Queued POIs:", obQueuedRecords);
+      const obQueuedCoords = new Set(
+        obQueuedRecords.map(
+          (row) =>
+            `${parseFloat(row.lng).toFixed(5)},${parseFloat(row.lat).toFixed(5)}`
+        )
+      );
+
+      loadMapData(csvUrl, (csvData) => {
+        const records = parseCSV(csvData);
+        console.log("All POIs:", records);
+        const geoJsonData = convertToGeoJson(records, obCoords, obQueuedCoords);
+        console.log("GeoJSON Data:", geoJsonData);
+        initializeMap(geoJsonData, config);
+      });
+    }
+
+
   });
 })();
