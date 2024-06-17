@@ -263,7 +263,7 @@
                 }
               });
 
-              const clusterColor = "blue";
+              let clusterColor = "blue";
               if (greenCount === leaves.length) {
                 clusterColor = "green";
               }
