@@ -101,6 +101,8 @@
             "rgba(0,255,0,0.9)",
             ["==", ["feature-state", "clusterColor"], "yellow"],
             "rgba(255,255,0,0.9)",
+            ["==", ["feature-state", "clusterColor"], "red"],
+            "rgba(255,0,0,0.9)",
             "rgba(0,133,163,0.9)", // default color
           ],
           "circle-radius": 14,
@@ -251,18 +253,26 @@
             .getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
               if (err) return;
               let greenCount = 0;
+              let redCount = 0;
               leaves.forEach((leaf) => {
                 if (leaf.properties.color === "rgba(0,255,0,0.9)") {
                   greenCount++;
                 }
+                if (leaf.properties.color === "rgba(255,0,0,0.9)") {
+                  redCount++;
+                }
               });
 
-              const clusterColor =
-                greenCount === leaves.length
-                  ? "green"
-                  : greenCount > 0
-                  ? "yellow"
-                  : "blue";
+              const clusterColor = "blue";
+              if (greenCount === leaves.length) {
+                clusterColor = "green";
+              }
+              if (redCount === leaves.length) {
+                clusterColor = "red";
+              }
+              if (greenCount > 0 || redCount > 0) {
+                clusterColor = "yellow";
+              }
 
               map.setFeatureState(
                 { source: "poi-full", id: clusterId },
