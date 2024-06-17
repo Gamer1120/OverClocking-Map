@@ -279,7 +279,11 @@
     });
   }
 
-  function convertToGeoJson(records, compareCoords = new Set(), compareQueuedCoords = new Set()) {
+  function convertToGeoJson(
+    records,
+    compareCoords = new Set(),
+    compareQueuedCoords = new Set()
+  ) {
     return {
       type: "FeatureCollection",
       features: records.map((row) => {
@@ -288,7 +292,9 @@
         ).toFixed(5)}`;
         const color = compareCoords.has(coordKey)
           ? "rgba(0,255,0,0.9)"
-          : compareQueuedCoords.has(coordKey) ? "rgba(255, 0, 0, 0.9)" : "rgba(0,133,163,0.9)";
+          : compareQueuedCoords.has(coordKey)
+          ? "rgba(255, 0, 0, 0.9)"
+          : "rgba(0,133,163,0.9)";
         return {
           type: "Feature",
           properties: {
@@ -325,13 +331,15 @@
       )
     );
 
-    loadMapData(obConfig.queued_url, (obQueuedData)=>{
+    loadMapData(obConfig.queued_url, (obQueuedData) => {
       const obQueuedRecords = parseCSV(obQueuedData);
       console.log("Queued POIs:", obQueuedRecords);
       const obQueuedCoords = new Set(
         obQueuedRecords.map(
           (row) =>
-            `${parseFloat(row.lng).toFixed(5)},${parseFloat(row.lat).toFixed(5)}`
+            `${parseFloat(row.lng).toFixed(5)},${parseFloat(row.lat).toFixed(
+              5
+            )}`
         )
       );
 
@@ -342,8 +350,6 @@
         console.log("GeoJSON Data:", geoJsonData);
         initializeMap(geoJsonData, config);
       });
-    }
-
-
+    });
   });
 })();
