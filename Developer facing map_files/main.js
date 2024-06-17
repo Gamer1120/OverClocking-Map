@@ -99,6 +99,8 @@
             "case",
             ["==", ["feature-state", "clusterColor"], "green"],
             "rgba(0,255,0,0.9)",
+            ["==", ["feature-state", "clusterColor"], "orange"],
+            "rgba(255,99,71,0.5)",
             ["==", ["feature-state", "clusterColor"], "yellow"],
             "rgba(255,255,0,0.9)",
             ["==", ["feature-state", "clusterColor"], "red"],
@@ -253,10 +255,14 @@
             .getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
               if (err) return;
               let greenCount = 0;
+              let orangeCount = 0;
               let redCount = 0;
               leaves.forEach((leaf) => {
                 if (leaf.properties.color === "rgba(0,255,0,0.9)") {
                   greenCount++;
+                }
+                if (leaf.properties.color === "rgba(255,99,71,0.5)") {
+                  orangeCount++;
                 }
                 if (leaf.properties.color === "rgba(255,0,0,0.9)") {
                   redCount++;
@@ -266,6 +272,9 @@
               let clusterColor = "blue";
               if (greenCount === leaves.length) {
                 clusterColor = "green";
+              }
+              if (orangeCount === leaves.length) {
+                clusterColor = "orange";
               }
               if (redCount === leaves.length) {
                 clusterColor = "red";
@@ -300,11 +309,14 @@
         const coordKey = `${parseFloat(row.lng).toFixed(5)},${parseFloat(
           row.lat
         ).toFixed(5)}`;
-        const color = compareCoords.has(coordKey)
-          ? "rgba(0,255,0,0.9)"
-          : compareQueuedCoords.has(coordKey)
-          ? "rgba(255, 0, 0, 0.9)"
-          : "rgba(0,133,163,0.9)";
+        const color =
+          compareCoords.has(coordKey) && compareQueuedCoords.has(coordKey)
+            ? "rgba(255,99,71,0.5)"
+            : compareCoords.has(coordKey)
+            ? "rgba(0,255,0,0.9)"
+            : compareQueuedCoords.has(coordKey)
+            ? "rgba(255,0,0,0.9)"
+            : "rgba(0,133,163,0.9)";
         return {
           type: "Feature",
           properties: {
