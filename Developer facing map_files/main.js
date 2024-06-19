@@ -303,38 +303,71 @@
     compareCoords = new Set(),
     compareQueuedCoords = new Set()
   ) {
+    const recordCoords = new Set(
+      records.map(
+        (row) =>
+          `${parseFloat(row.lng).toFixed(5)},${parseFloat(row.lat).toFixed(5)}`
+      )
+    );
+
+    // Find items in compareQueuedCoords but not in records
+    const queuedNotInRecords = Array.from(compareQueuedCoords).filter(
+      (coord) => !recordCoords.has(coord)
+    );
+
+    const features = records.map((row) => {
+      const coordKey = `${parseFloat(row.lng).toFixed(5)},${parseFloat(
+        row.lat
+      ).toFixed(5)}`;
+      const color =
+        compareCoords.has(coordKey) && compareQueuedCoords.has(coordKey)
+          ? "rgba(255,99,71,0.5)"
+          : compareCoords.has(coordKey)
+          ? "rgba(0,255,0,0.9)"
+          : compareQueuedCoords.has(coordKey)
+          ? "rgba(255,0,0,0.9)"
+          : "rgba(0,133,163,0.9)";
+      return {
+        type: "Feature",
+        properties: {
+          img: row.img_uri,
+          title: row.title,
+          address: row.address,
+          localizability: row.localizability,
+          color: color,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [
+            parseFloat(row.lng).toFixed(6),
+            parseFloat(row.lat).toFixed(6),
+          ],
+        },
+      };
+    });
+
+    // Add queuedNotInRecords as red features
+    queuedNotInRecords.forEach((coord) => {
+      const [lng, lat] = coord.split(",").map(parseFloat);
+      features.push({
+        type: "Feature",
+        properties: {
+          img: "",
+          title: "Queued POI",
+          address: "",
+          localizability: "",
+          color: "rgba(255,0,0,0.9)",
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [lng.toFixed(6), lat.toFixed(6)],
+        },
+      });
+    });
+
     return {
       type: "FeatureCollection",
-      features: records.map((row) => {
-        const coordKey = `${parseFloat(row.lng).toFixed(5)},${parseFloat(
-          row.lat
-        ).toFixed(5)}`;
-        const color =
-          compareCoords.has(coordKey) && compareQueuedCoords.has(coordKey)
-            ? "rgba(255,99,71,0.5)"
-            : compareCoords.has(coordKey)
-            ? "rgba(0,255,0,0.9)"
-            : compareQueuedCoords.has(coordKey)
-            ? "rgba(255,0,0,0.9)"
-            : "rgba(0,133,163,0.9)";
-        return {
-          type: "Feature",
-          properties: {
-            img: row.img_uri,
-            title: row.title,
-            address: row.address,
-            localizability: row.localizability,
-            color: color,
-          },
-          geometry: {
-            type: "Point",
-            coordinates: [
-              parseFloat(row.lng).toFixed(6),
-              parseFloat(row.lat).toFixed(6),
-            ],
-          },
-        };
-      }),
+      features: features,
     };
   }
 
